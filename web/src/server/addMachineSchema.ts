@@ -14,10 +14,10 @@ export const insertCustomMachineSchema = createInsertSchema(machinesTable, {
   gpu: (schema) => schema.gpu.default("T4"),
   snapshot: (schema) =>
     schema.snapshot.default({
-      comfyui: "d0165d819afe76bd4e6bdd710eb5f3e571b6a804",
+      comfyui: "bb52934ba4e492459c5d3d01c81a8473a9962687",
       git_custom_nodes: {
         "https://github.com/BennyKok/comfyui-deploy.git": {
-          hash: "43fe0a384aa5fa9e141d4a264b2ed40a73b817bc",
+          hash: "503dca8fb63cbbe4d04de5f5655840a2818ade20",
           disabled: false,
         },
       },
@@ -26,14 +26,14 @@ export const insertCustomMachineSchema = createInsertSchema(machinesTable, {
   models: (schema) =>
     schema.models.default([
       {
-        name: "v1-5-pruned-emaonly.ckpt",
-        type: "checkpoints",
-        base: "SD1.5",
-        save_path: "default",
-        description: "Stable Diffusion 1.5 base model",
-        reference: "https://huggingface.co/runwayml/stable-diffusion-v1-5",
-        filename: "v1-5-pruned-emaonly.ckpt",
-        url: "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt",
+        "url": "https://civitai.com/api/download/models/113623?type=Model&format=SafeTensor&size=full&fp=fp16",
+        "base": "SD 1.5",
+        "name": "LEOSAM's HelloWorld XL",
+        "type": "checkpoints",
+        "filename": "leosamsHelloworldXL_filmGrain20.safetensors",
+        "reference": "",
+        "save_path": "checkpoints/SD1.5",
+        "description": ""
       },
     ]),
 });

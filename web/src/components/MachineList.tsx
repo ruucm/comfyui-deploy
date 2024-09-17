@@ -345,11 +345,12 @@ export function MachineList({
         <div className="ml-auto flex gap-2">
           <InsertModal
             dialogClassName="sm:max-w-[600px]"
-            disabled={
-              data.some(
-                (machine) => machine.type === "comfy-deploy-serverless"
-              ) && !userMetadata.betaFeaturesAccess
-            }
+            // disabled={
+            //   data.some(
+            //     (machine) => machine.type === "comfy-deploy-serverless"
+            //   ) && !userMetadata.betaFeaturesAccess
+            // }
+            disabled={false}
             tooltip={
               data.some((machine) => machine.type === "comfy-deploy-serverless")
                 ? "Only one hosted machine at preview stage"
@@ -385,7 +386,8 @@ export function MachineList({
                   ? "fallback"
                   : "select",
                 inputProps: {
-                  disabled: !userMetadata.betaFeaturesAccess,
+                  // disabled: !userMetadata.betaFeaturesAccess,
+                  disabled: false
                 },
               },
             }}
