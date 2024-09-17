@@ -376,8 +376,22 @@ async def comfy_deploy_run(request):
 
     data = await request.json()
 
+
+
+    workflow_api_old = data.get("workflow_api")
+    print("workflow_api_old", workflow_api_old)
+
+
+    # print all data in json
+    print("data", json.dumps(data))
+
+
+
+
     # In older version, we use workflow_api, but this has inputs already swapped in nextjs frontend, which is tricky
-    workflow_api = data.get("workflow_api_raw")
+    workflow_api = data.get("workflow_api")
+    print("workflow_api (1)", workflow_api)
+    
     # The prompt id generated from comfy deploy, can be None
     prompt_id = data.get("prompt_id")
     inputs = data.get("inputs")
@@ -435,8 +449,15 @@ async def comfy_deploy_run(request):
     return web.json_response(res, status=status)
 
 async def stream_prompt(data, token):
+    # print all data
+    print("data", data)
+
+    workflow_api_old = data.get("workflow_api")
+    print("workflow_api_old", workflow_api_old)
     # In older version, we use workflow_api, but this has inputs already swapped in nextjs frontend, which is tricky
-    workflow_api = data.get("workflow_api_raw")
+    workflow_api = data.get("workflow_api")
+    print("workflow_api (2)", workflow_api)
+
     # The prompt id generated from comfy deploy, can be None
     prompt_id = data.get("prompt_id")
     inputs = data.get("inputs")
@@ -1230,8 +1251,8 @@ async def upload_file(prompt_id, filename, subfolder=None, content_type="image/p
             # "Content-Length": size,
         }
         
-        if ok.get('include_acl') is True:
-            headers["x-amz-acl"] = "public-read"
+        # if ok.get('include_acl') is True:
+        headers["x-amz-acl"] = "public-read"
         
         # response = requests.put(ok.get("url"), headers=headers, data=data)
         response = await async_request_with_retry('PUT', ok.get("url"), headers=headers, data=data)
