@@ -16,6 +16,7 @@ const createRunRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
+            external_id: z.string().optional(),
             deployment_id: z.string(),
             inputs: z.record(z.union([z.string(), z.number()])).optional(),
           }),
@@ -56,7 +57,7 @@ export const registerCreateRunRoute = (app: App) => {
     const origin = `${proto}://${host}` || new URL(c.req.url).origin;
     const apiKeyTokenData = c.get("apiKeyTokenData")!;
 
-    const { deployment_id, inputs } = data;
+    const { external_id, deployment_id, inputs } = data;
 
     try {
       const deploymentData = await db.query.deploymentsTable.findFirst({
@@ -79,6 +80,7 @@ export const registerCreateRunRoute = (app: App) => {
       if (!deploymentData) throw new Error("Deployment not found");
 
       const run_id = await createRun({
+        external_id,
         origin,
         workflow_version_id: deploymentData.version,
         machine_id: deploymentData.machine,

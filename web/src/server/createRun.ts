@@ -19,6 +19,7 @@ import { withServerPromise } from "./withServerPromise";
 
 export const createRun = withServerPromise(
   async ({
+    external_id,
     origin,
     workflow_version_id,
     machine_id,
@@ -26,6 +27,7 @@ export const createRun = withServerPromise(
     runOrigin,
     apiUser,
   }: {
+    external_id?: string;
     origin: string;
     workflow_version_id: string | WorkflowVersionType;
     machine_id: string | MachineType;
@@ -107,7 +109,7 @@ export const createRun = withServerPromise(
       file_upload_endpoint: `${origin}/api/file-upload`,
     };
 
-    prompt_id = v4();
+    prompt_id = external_id || v4();
 
     // Add to our db
     const workflow_run = await db
