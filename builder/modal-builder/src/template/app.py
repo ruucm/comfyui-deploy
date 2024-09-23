@@ -25,6 +25,7 @@ deploy_test = config["deploy_test"] == "True"
 # print(config)
 
 web_app = FastAPI()
+print("log start")
 print(config)
 print("deploy_test ", deploy_test)
 stub = Stub(name=config["name"])
@@ -41,7 +42,15 @@ if not deploy_test:
         })
         .apt_install("git", "wget")
         .pip_install(
-            "git+https://github.com/modal-labs/asgiproxy.git", "httpx", "tqdm"
+            "git+https://github.com/modal-labs/asgiproxy.git", "httpx", "tqdm",
+            "albumentations==1.3.1",
+            "insightface",
+            "onnxruntime"
+        )
+        .pip_install(
+            "git+https://github.com/timojl/clipseg.git@bbc86cfbb7e6a47fb6dae47ba01d3e1c2d6158b0",
+            "httpx",
+            "tqdm"
         )
         .apt_install("libgl1-mesa-glx", "libglib2.0-0")
         .run_commands(
@@ -54,6 +63,13 @@ if not deploy_test:
             "cd /comfyui/custom_nodes/ComfyUI-Manager && git reset --hard de3cd9fe721020463e3e1c107a257ba1a52b9acd",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && pip install -r requirements.txt",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && mkdir startup-scripts",
+
+            # create config.ini file and add to install external models
+            "echo '[default]' > /comfyui/custom_nodes/ComfyUI-Manager/config.ini",
+            "echo 'security_level = weak' >> /comfyui/custom_nodes/ComfyUI-Manager/config.ini",
+            # check the config.ini file
+            "cat /comfyui/custom_nodes/ComfyUI-Manager/config.ini",
+            "pip show pydantic insightface fastapi albumentations"
         )
         # .run_commands(
         #     # Install comfy deploy
@@ -80,7 +96,7 @@ if not deploy_test:
 # Time to wait between API check attempts in milliseconds
 COMFY_API_AVAILABLE_INTERVAL_MS = 50
 # Maximum number of API check attempts
-COMFY_API_AVAILABLE_MAX_RETRIES = 500
+COMFY_API_AVAILABLE_MAX_RETRIES = 1000
 # Time to wait between poll attempts in milliseconds
 COMFY_POLLING_INTERVAL_MS = 250
 # Maximum number of poll attempts
@@ -104,13 +120,17 @@ def check_server(url, retries=50, delay=500):
     bool: True if the server is reachable within the given number of retries, otherwise False
     """
 
+    start_time = time.time()  # Record the start time
+
     for i in range(retries):
         try:
             response = requests.get(url)
 
             # If the response status code is 200, the server is up and running
             if response.status_code == 200:
+                elapsed_time = time.time() - start_time  # Calculate elapsed time
                 print(f"runpod-worker-comfy - API is reachable")
+                print(f"(app.py) Time taken for server to start up: {elapsed_time:.2f} seconds.")
                 return True
         except requests.RequestException as e:
             # If an exception occurs, the server may not be ready
@@ -121,9 +141,11 @@ def check_server(url, retries=50, delay=500):
         # Wait for the specified delay before retrying
         time.sleep(delay / 1000)
 
+    elapsed_time = time.time() - start_time  # Calculate elapsed time
     print(
         f"runpod-worker-comfy - Failed to connect to server at {url} after {retries} attempts."
     )
+    print(f"(app.py) Time taken for server to start up: {elapsed_time:.2f} seconds.")
     return False
 
 
@@ -157,7 +179,7 @@ image = Image.debian_slim()
 target_image = image if deploy_test else dockerfile_image
 
 
-@stub.function(image=target_image, gpu=config["gpu"])
+@stub.function(image=target_image, gpu=config["gpu"], timeout=60 * 60)
 def run(input: Input):
     import subprocess
     import time
@@ -288,7 +310,12 @@ def spawn_comfyui_in_background():
     # Restrict to 1 container because we want to our ComfyUI session state
     # to be on a single container.
     concurrency_limit=1,
-    timeout=10 * 60,
+    # keep_warm=1,
+    # timeout=10 * 60,
+    timeout=60 * 60 * 12, # 12 hours
+    # config cpu
+    cpu=8.0,
+    # container_idle_timeout=60 * 20, # 20 minutes
 )
 @asgi_app()
 def comfyui_app():
