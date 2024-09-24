@@ -312,7 +312,7 @@ def spawn_comfyui_in_background():
     concurrency_limit=1,
     # keep_warm=1,
     # timeout=10 * 60,
-    timeout=60 * 60 * 12, # 12 hours
+    timeout=60 * 60 * 1, # 1 hour
     # config cpu
     cpu=8.0,
     # container_idle_timeout=60 * 20, # 20 minutes
