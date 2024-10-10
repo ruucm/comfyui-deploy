@@ -9,7 +9,7 @@ command = ["python", "main.py", "--disable-auto-launch", "--disable-metadata", "
 # Start the server
 server_process = subprocess.Popen(command, cwd="/comfyui")
 
-def check_server(url, retries=50, delay=500):
+def check_server(url, retries=101, delay=1000):
     for i in range(retries):
         try:
             response = requests.head(url)
