@@ -187,7 +187,7 @@ def run(input: Input):
     print(f"comfy-modal - check server")
 
     command = ["python", "main.py",
-               "--disable-auto-launch", "--disable-metadata"]
+               "--disable-auto-launch", "--disable-metadata", "--enable-cors-header"]
     server_process = subprocess.Popen(command, cwd="/comfyui")
 
     check_server(
@@ -279,6 +279,7 @@ def spawn_comfyui_in_background():
         [
             "python",
             "main.py",
+            "--enable-cors-header",
             "--dont-print-server",
             "--port",
             PORT,
