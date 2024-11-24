@@ -793,8 +793,8 @@ async def upload_file_endpoint(request):
                         "Content-Type": file_type,
                         # "Content-Length": str(file_size)
                     }
-                    if content.get("include_acl") is True:
-                        headers["x-amz-acl"] = "public-read"
+                    # if content.get("include_acl") is True:
+                    headers["x-amz-acl"] = "public-read"
                     upload_response = await async_request_with_retry(
                         "PUT", upload_url, data=f, headers=headers
                     )
