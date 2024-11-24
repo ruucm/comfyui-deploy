@@ -60,7 +60,7 @@ if not deploy_test:
 
             # Install comfyui manager
             "cd /comfyui/custom_nodes && git clone https://github.com/ltdrdata/ComfyUI-Manager.git",
-            "cd /comfyui/custom_nodes/ComfyUI-Manager && git reset --hard de3cd9fe721020463e3e1c107a257ba1a52b9acd",
+            # "cd /comfyui/custom_nodes/ComfyUI-Manager && git reset --hard eb88e06ab12733a245060054065b403b3be612c3",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && pip install -r requirements.txt",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && mkdir startup-scripts",
 
