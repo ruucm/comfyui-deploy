@@ -1,6 +1,6 @@
 from config import config
 import modal
-from modal import Image, Mount, web_endpoint, Stub, asgi_app
+from modal import Image, Mount, web_endpoint, App, asgi_app
 import json
 import urllib.request
 import urllib.parse
@@ -28,7 +28,7 @@ web_app = FastAPI()
 print("log start")
 print(config)
 print("deploy_test ", deploy_test)
-stub = Stub(name=config["name"])
+app = App(name=config["name"])
 # print(stub.app_id)
 
 if not deploy_test:
@@ -179,7 +179,7 @@ image = Image.debian_slim()
 target_image = image if deploy_test else dockerfile_image
 
 
-@stub.function(image=target_image, gpu=config["gpu"], timeout=60 * 60)
+@app.function(image=target_image, gpu=config["gpu"], timeout=60 * 60)
 def run(input: Input):
     import subprocess
     import time
@@ -261,7 +261,7 @@ async def bar(request_input: RequestInput):
     # pass
 
 
-@stub.function(image=image)
+@app.function(image=image)
 @asgi_app()
 def comfyui_api():
     return web_app
@@ -303,7 +303,7 @@ def spawn_comfyui_in_background():
                 )
 
 
-@stub.function(
+@app.function(
     image=target_image,
     gpu=config["gpu"],
     # Allows 100 concurrent requests per container.
