@@ -261,7 +261,7 @@ async def bar(request_input: RequestInput):
     # pass
 
 
-@app.function(image=image)
+@app.function(image=image, timeout=60 * 60)
 @asgi_app()
 def comfyui_api():
     return web_app
