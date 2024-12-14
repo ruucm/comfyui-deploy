@@ -246,6 +246,13 @@
       "when": 1705902960991,
       "tag": "0034_even_lady_ursula",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1734156357995,
+      "tag": "0035_hesitant_lord_hawal",
+      "breakpoints": true
     }
   ]
 }
