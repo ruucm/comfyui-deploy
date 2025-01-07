@@ -56,7 +56,7 @@ if not deploy_test:
         .run_commands(
             # Basic comfyui setup
             "git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui",
-            "cd /comfyui && pip install xformers!=0.0.18 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121",
+            "cd /comfyui && pip install xformers!=0.0.18 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu124",
 
             # Install comfyui manager
             "cd /comfyui/custom_nodes && git clone https://github.com/ltdrdata/ComfyUI-Manager.git",
