@@ -41,6 +41,7 @@ if not deploy_test:
             "CIVITAI_TOKEN": config["civitai_token"],
         })
         .apt_install("git", "wget")
+        .pip_install("fastapi", "uvicorn")
         .pip_install(
             "git+https://github.com/modal-labs/asgiproxy.git", "httpx", "tqdm",
             "albumentations==1.3.1",
@@ -261,7 +262,7 @@ async def bar(request_input: RequestInput):
     # pass
 
 
-@app.function(image=image, timeout=60 * 60)
+@app.function(image=dockerfile_image, timeout=60 * 60)
 @asgi_app()
 def comfyui_api():
     return web_app
