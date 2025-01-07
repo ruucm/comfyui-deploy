@@ -32,9 +32,6 @@ app = App(name=config["name"])
 # print(stub.app_id)
 
 if not deploy_test:
-    # dockerfile_image = Image.from_dockerfile(f"{current_directory}/Dockerfile", context_mount=Mount.from_local_dir(f"{current_directory}/data", remote_path="/data"))
-    # dockerfile_image = Image.from_dockerfile(f"{current_directory}/Dockerfile", context_mount=Mount.from_local_dir(f"{current_directory}/data", remote_path="/data"))
-
     dockerfile_image = (
         modal.Image.debian_slim()
         .env({
