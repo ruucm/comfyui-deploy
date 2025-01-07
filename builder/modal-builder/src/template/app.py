@@ -57,11 +57,12 @@ if not deploy_test:
         .run_commands(
             # Basic comfyui setup
             "git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui",
+            "cd /comfyui && git reset --hard 839ed3368efd0f61a2b986f57fe9e0698fd08e9f",
             "cd /comfyui && pip install xformers!=0.0.18 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu124",
 
             # Install comfyui manager
             "cd /comfyui/custom_nodes && git clone https://github.com/ltdrdata/ComfyUI-Manager.git",
-            # "cd /comfyui/custom_nodes/ComfyUI-Manager && git reset --hard eb88e06ab12733a245060054065b403b3be612c3",
+            "cd /comfyui/custom_nodes/ComfyUI-Manager && git reset --hard fbb1cd60d6cce7e43d331ee990e718b845995b84",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && pip install -r requirements.txt",
             "cd /comfyui/custom_nodes/ComfyUI-Manager && mkdir startup-scripts",
 
