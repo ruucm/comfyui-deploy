@@ -178,7 +178,7 @@ image = Image.debian_slim()
 target_image = image if deploy_test else dockerfile_image
 
 
-@app.function(image=target_image, gpu=config["gpu"], timeout=60 * 60)
+@app.function(image=target_image, gpu=config["gpu"], timeout=60 * 10)
 def run(input: Input):
     import subprocess
     import time
@@ -260,7 +260,7 @@ async def bar(request_input: RequestInput):
     # pass
 
 
-@app.function(image=dockerfile_image, timeout=60 * 60)
+@app.function(image=dockerfile_image, timeout=60 * 10)
 @asgi_app()
 def comfyui_api():
     return web_app
@@ -312,7 +312,7 @@ def spawn_comfyui_in_background():
     concurrency_limit=1,
     # keep_warm=1,
     # timeout=10 * 60,
-    timeout=60 * 60 * 1, # 1 hour
+    timeout=60 * 1, # 1 minute
     # config cpu
     cpu=8.0,
     # container_idle_timeout=60 * 20, # 20 minutes
