@@ -167,6 +167,7 @@ class GPUType(str, Enum):
     A100 = "A100"
     L4 = "L4"
     H100 = "H100"
+    L40S = "L40S"
 
 
 class Item(BaseModel):
