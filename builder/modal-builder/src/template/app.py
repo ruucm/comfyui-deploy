@@ -53,8 +53,8 @@ if not deploy_test:
         .apt_install("libgl1-mesa-glx", "libglib2.0-0")
         .run_commands(
             # Basic comfyui setup
-            "git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui",
-            "cd /comfyui && git reset --hard 839ed3368efd0f61a2b986f57fe9e0698fd08e9f",
+            "git clone https://github.com/ruucm/ComfyUI.git /comfyui",
+            "cd /comfyui && git checkout feat/custom-nodes-arg",
             "cd /comfyui && pip install xformers!=0.0.18 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu124",
 
             # Install comfyui manager
@@ -80,9 +80,9 @@ if not deploy_test:
         .run_commands("chmod +x /start.sh")
 
         # Restore the custom nodes first
-        .copy_local_file(f"{current_directory}/data/restore_snapshot.py", "/")
-        .copy_local_file(f"{current_directory}/data/snapshot.json", "/comfyui/custom_nodes/ComfyUI-Manager/startup-scripts/restore-snapshot.json")
-        .run_commands("python restore_snapshot.py")
+        # .copy_local_file(f"{current_directory}/data/restore_snapshot.py", "/")
+        # .copy_local_file(f"{current_directory}/data/snapshot.json", "/comfyui/custom_nodes/ComfyUI-Manager/startup-scripts/restore-snapshot.json")
+        # .run_commands("python restore_snapshot.py")
 
         # Then install the models
         .copy_local_file(f"{current_directory}/data/install_deps.py", "/")
@@ -270,19 +270,26 @@ HOST = "127.0.0.1"
 PORT = "8188"
 
 
-def spawn_comfyui_in_background():
+def spawn_comfyui_in_background(custom_nodes_arg = []):
     import socket
     import subprocess
 
+    base_args = [
+        "python",
+        "main.py",
+        "--enable-cors-header",
+        "--dont-print-server",
+        "--port",
+        PORT,
+    ]
+    
+    # Add custom nodes arguments if specified
+    full_args = base_args + custom_nodes_arg
+
+    print(f"comfy-modal - spawning comfyui with full_args: {full_args}")
+    
     process = subprocess.Popen(
-        [
-            "python",
-            "main.py",
-            "--enable-cors-header",
-            "--dont-print-server",
-            "--port",
-            PORT,
-        ],
+        full_args,
         cwd="/comfyui",
     )
 
@@ -322,10 +329,11 @@ def comfyui_app():
     from asgiproxy.config import BaseURLProxyConfigMixin, ProxyConfig
     from asgiproxy.context import ProxyContext
     from asgiproxy.simple_proxy import make_simple_proxy_app
+    from fastapi import Request
+    from urllib.parse import parse_qs
 
-    spawn_comfyui_in_background()
-
-    config = type(
+    # Create proxy configuration
+    proxy_config = type(
         "Config",
         (BaseURLProxyConfigMixin, ProxyConfig),
         {
@@ -334,4 +342,39 @@ def comfyui_app():
         },
     )()
 
-    return make_simple_proxy_app(ProxyContext(config))
+    # Create the proxy app
+    proxy_app = make_simple_proxy_app(ProxyContext(proxy_config))
+
+    @web_app.get("/")
+    async def root(request: Request):
+        # Get query parameters from the request
+        query_params = dict(request.query_params)
+        custom_nodes = query_params.get('custom_nodes', None)
+
+        # Prepare custom nodes argument if specified
+        custom_nodes_arg = []
+        if custom_nodes:
+            custom_nodes_arg = ["--custom-nodes"] + [node.strip() for node in custom_nodes.split(',')]
+
+        print(f"comfy-modal - spawning comfyui with custom nodes: {custom_nodes_arg}")
+        spawn_comfyui_in_background(custom_nodes_arg)
+
+        # Forward the request to the proxy app using the ASGI interface
+        response = await proxy_app(
+            request.scope,
+            request._receive,
+            request._send
+        )
+        return response
+
+    @web_app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
+    async def catch_all(request: Request):
+        print(f"comfy-modal - catch_all - path: {request.url.path}")
+        response = await proxy_app(
+            request.scope,
+            request._receive,
+            request._send
+        )
+        return response
+
+    return web_app
