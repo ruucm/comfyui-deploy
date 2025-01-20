@@ -7,6 +7,7 @@ import urllib.parse
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import HTMLResponse
+import socket
 
 # deploy_test = False
 
@@ -318,11 +319,11 @@ def spawn_comfyui_in_background(custom_nodes_arg = []):
     # to be on a single container.
     concurrency_limit=1,
     # keep_warm=1,
-    # timeout=10 * 60,
-    timeout=60 * 1, # 1 minute
+    # timeout configs
+    container_idle_timeout=10, # 10 seconds (minimum)
+    timeout=30, # 30 seconds
     # config cpu
     cpu=8.0,
-    # container_idle_timeout=60 * 20, # 20 minutes
 )
 @asgi_app()
 def comfyui_app():
@@ -368,6 +369,23 @@ def comfyui_app():
     @web_app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
     async def catch_all(request: Request):
         # print(f"comfy-modal - catch_all - path: {request.url.path}")
+
+        try:
+            socket.create_connection((HOST, int(PORT)), timeout=1).close()
+        except (socket.timeout, ConnectionRefusedError):
+            # Get query parameters from the request
+            query_params = dict(request.query_params)
+            custom_nodes = query_params.get('custom_nodes', None)
+
+            # Prepare custom nodes argument if specified
+            custom_nodes = query_params.get('custom_nodes', None)
+            custom_nodes_arg = []
+            if custom_nodes:
+                custom_nodes_arg = ["--custom-nodes"] + [node.strip() for node in custom_nodes.split(',')]
+
+            print(f"comfy-modal - spawning comfyui with custom nodes: {custom_nodes_arg}")
+            spawn_comfyui_in_background(custom_nodes_arg)
+
         return await proxy_app(
             request.scope,
             request._receive,
