@@ -5,7 +5,7 @@ import json
 import urllib.request
 import urllib.parse
 from pydantic import BaseModel
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import HTMLResponse
 
 # deploy_test = False
@@ -332,18 +332,18 @@ def comfyui_app():
     from fastapi import Request
     from urllib.parse import parse_qs
 
-    # Create proxy configuration
-    proxy_config = type(
-        "Config",
-        (BaseURLProxyConfigMixin, ProxyConfig),
-        {
-            "upstream_base_url": f"http://{HOST}:{PORT}",
-            "rewrite_host_header": f"{HOST}:{PORT}",
-        },
-    )()
+    # Create proxy configuration with WebSocket support
+    class CustomProxyConfig(BaseURLProxyConfigMixin, ProxyConfig):
+        def __init__(self):
+            self.upstream_base_url = f"http://{HOST}:{PORT}"
+            self.rewrite_host_header = f"{HOST}:{PORT}"
+        
+        def websocket_upstream_base_url(self):
+            return f"ws://{HOST}:{PORT}"
 
-    # Create the proxy app
-    proxy_app = make_simple_proxy_app(ProxyContext(proxy_config))
+    proxy_config = CustomProxyConfig()
+    proxy_context = ProxyContext(proxy_config)
+    proxy_app = make_simple_proxy_app(proxy_context)
 
     @web_app.get("/")
     async def root(request: Request):
@@ -359,22 +359,28 @@ def comfyui_app():
         print(f"comfy-modal - spawning comfyui with custom nodes: {custom_nodes_arg}")
         spawn_comfyui_in_background(custom_nodes_arg)
 
-        # Forward the request to the proxy app using the ASGI interface
-        response = await proxy_app(
+        return await proxy_app(
             request.scope,
             request._receive,
             request._send
         )
-        return response
 
     @web_app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
     async def catch_all(request: Request):
-        print(f"comfy-modal - catch_all - path: {request.url.path}")
-        response = await proxy_app(
+        # print(f"comfy-modal - catch_all - path: {request.url.path}")
+        return await proxy_app(
             request.scope,
             request._receive,
             request._send
         )
-        return response
+
+    @web_app.websocket_route("/{path:path}")
+    async def websocket_catch_all(websocket: WebSocket):
+        # print(f"comfy-modal - websocket connection - path: {websocket.url.path}")
+        await proxy_app(
+            websocket.scope,
+            websocket._receive,
+            websocket._send
+        )
 
     return web_app
