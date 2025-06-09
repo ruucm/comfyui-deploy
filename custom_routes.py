@@ -1507,8 +1507,20 @@ async def upload_file(
     
     # Check if this is an image file and create WebP version
     file_extension = os.path.splitext(filename)[1].lower()
-    if file_extension in [".jpg", ".jpeg", ".png"] and file_extension != ".webp":
+    logger.info(f"[DEBUG] Processing file: {filename}, extracted extension: {file_extension}")
+    
+    is_image_format = file_extension in [".jpg", ".jpeg", ".png"]
+    is_not_webp = file_extension != ".webp"
+    should_create_webp = is_image_format and is_not_webp
+    
+    logger.info(f"[DEBUG] File extension check - is_image_format: {is_image_format}, is_not_webp: {is_not_webp}, should_create_webp: {should_create_webp}")
+    
+    if should_create_webp:
+        logger.info(f"[DEBUG] Starting WebP conversion for: {filename} (prompt_id: {prompt_id})")
         await create_and_upload_webp_version(prompt_id, file, filename, subfolder, type, item)
+        logger.info(f"[DEBUG] Completed WebP conversion for: {filename}")
+    else:
+        logger.info(f"[DEBUG] Skipping WebP conversion for: {filename} (extension: {file_extension})")
 
     return item
 
