@@ -1472,6 +1472,7 @@ async def upload_file(
 ):
     """
     Uploads file to S3 bucket using S3 client object
+    Also creates and uploads a WebP version if the file is an image
     :return: None
     """
     filename, output_dir = folder_paths.annotated_filepath(filename)
@@ -1501,13 +1502,28 @@ async def upload_file(
 
     logger.info(f"Uploading file {file}")
 
+    # Upload original file
+    await upload_single_file(prompt_id, file, filename, content_type, item)
+    
+    # Check if this is an image file and create WebP version
+    file_extension = os.path.splitext(filename)[1].lower()
+    if file_extension in [".jpg", ".jpeg", ".png"] and file_extension != ".webp":
+        await create_and_upload_webp_version(prompt_id, file, filename, subfolder, type, item)
+
+    return item
+
+
+async def upload_single_file(prompt_id, file_path, filename, content_type, item=None):
+    """
+    Uploads a single file to S3
+    """
     file_upload_endpoint = prompt_metadata[prompt_id].file_upload_endpoint
     token = prompt_metadata[prompt_id].token
-    filename = quote(filename)
-    prompt_id = quote(prompt_id)
-    content_type = quote(content_type)
+    quoted_filename = quote(filename)
+    quoted_prompt_id = quote(prompt_id)
+    quoted_content_type = quote(content_type)
 
-    target_url = f"{file_upload_endpoint}?file_name={filename}&run_id={prompt_id}&type={content_type}&version=v2"
+    target_url = f"{file_upload_endpoint}?file_name={quoted_filename}&run_id={quoted_prompt_id}&type={quoted_content_type}&version=v2"
 
     start_time = time.time()  # Start timing here
     # logger.info(f"Target URL: {target_url}")
@@ -1524,7 +1540,7 @@ async def upload_file(
 
     # logger.info(f"Result: {ok}")
 
-    async with aiofiles.open(file, "rb") as f:
+    async with aiofiles.open(file_path, "rb") as f:
         data = await f.read()
         size = str(len(data))
         # logger.info(f"Image size: {size}")
@@ -1548,12 +1564,14 @@ async def upload_file(
                     session, ok.get("url"), headers, data
                 )
                 # Process successful response...
+                logger.info(f"Successfully uploaded: {filename}")
             except Exception as e:
                 # Handle final failure...
-                logger.error(f"Upload ultimately failed: {str(e)}")
+                logger.error(f"Upload ultimately failed for {filename}: {str(e)}")
+                raise
 
         end_time = time.time()  # End timing after the request is complete
-        logger.info("Upload time: {:.2f} seconds".format(end_time - start_time))
+        logger.info(f"Upload time for {filename}: {end_time - start_time:.2f} seconds")
 
     if item is not None:
         file_download_url = ok.get("download_url")
@@ -1563,7 +1581,45 @@ async def upload_file(
         if ok.get("is_public") is not None:
             item["is_public"] = ok.get("is_public")
 
-    return item
+
+async def create_and_upload_webp_version(prompt_id, original_file_path, original_filename, subfolder, type, item):
+    """
+    Creates a WebP version of an image and uploads it
+    """
+    try:
+        # Generate WebP filename
+        name_without_ext = os.path.splitext(original_filename)[0]
+        webp_filename = f"{name_without_ext}.webp"
+        webp_file_path = os.path.join(os.path.dirname(original_file_path), webp_filename)
+        
+        # Convert to WebP
+        logger.info(f"Creating WebP version: {webp_filename}")
+        with Image.open(original_file_path) as img:
+            # Convert RGBA to RGB if necessary for JPEG compatibility
+            if img.mode == 'RGBA':
+                # Create a white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                img = background
+            
+            # Save as WebP with high quality
+            img.save(webp_file_path, 'WEBP', quality=85, optimize=True)
+        
+        logger.info(f"WebP version created: {webp_file_path}")
+        
+        # Upload WebP version
+        await upload_single_file(prompt_id, webp_file_path, webp_filename, "image/webp")
+        
+        # Clean up the temporary WebP file
+        try:
+            os.remove(webp_file_path)
+            logger.info(f"Cleaned up temporary WebP file: {webp_file_path}")
+        except Exception as cleanup_error:
+            logger.warning(f"Failed to clean up WebP file {webp_file_path}: {cleanup_error}")
+            
+    except Exception as e:
+        logger.error(f"Failed to create/upload WebP version for {original_filename}: {str(e)}")
+        logger.error(traceback.format_exc())
 
 
 def have_pending_upload(prompt_id):
