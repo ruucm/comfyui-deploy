@@ -1615,7 +1615,7 @@ async def create_and_upload_webp_version(prompt_id, original_file_path, original
                 img = background
             
             # Save as WebP with high quality
-            img.save(webp_file_path, 'WEBP', quality=85, optimize=True)
+            img.save(webp_file_path, 'WEBP', quality=70, optimize=True)
         
         logger.info(f"WebP version created: {webp_file_path}")
         
